@@ -1,5 +1,6 @@
 const Builder = require("./Builder")
 
+// TODO: check types and verify length
 module.exports = class SQLifier {
     #builder;
     #conn;
@@ -27,7 +28,8 @@ module.exports = class SQLifier {
 
     insert (data) {
         return new Promise((resolve, reject) => {
-            const { columns, values } = this.builder.getColumnValuePairs(data);
+            const { columns, values } = 
+                this.builder.getColumnValuePairs({ ...data, ...this.#builder.getUpdateDefaultDateFields(this.table) });
 
             this.conn.query(`
                 INSERT INTO ${this.table} (${columns}) VALUES (${values});
@@ -77,7 +79,7 @@ module.exports = class SQLifier {
     find ({ condition = '', select = '*', join } = {}) {
         return new Promise((resolve, reject) => {
             this.conn.query(`
-            SELECT ${select} FROM ${this.table} ${this.builder.evalCondition(condition, join)}
+            SELECT ${this.builder.joinSafeSelect(select, join)} FROM ${this.table} ${this.builder.evalCondition(condition, join)}
             `, this.builder.resHandler(resolve, reject))
         })
     }
@@ -85,7 +87,7 @@ module.exports = class SQLifier {
     findOne ({ condition = '', select = '*', join } = {}) {
         return new Promise((resolve, reject) => {
             this.conn.query(`
-            SELECT ${select} FROM ${this.table} ${this.builder.evalCondition(condition, join, 'LIMIT 1')} 
+            SELECT ${this.builder.joinSafeSelect(select, join)} FROM ${this.table} ${this.builder.evalCondition(condition, join, 'LIMIT 1')} 
             `, this.builder.resHandler(resolve, reject, true))
         })
     }
@@ -93,7 +95,7 @@ module.exports = class SQLifier {
     findLatestOne ({condition = '', select = '*', join} = {}) {
         return new Promise((resolve, reject) => {
             this.conn.query(`
-            SELECT ${select} FROM ${this.table} ${this.builder.evalCondition(condition, join, `ORDER BY ${this.table}.id DESC LIMIT 1`)}
+            SELECT ${this.builder.joinSafeSelect(select, join)} FROM ${this.table} ${this.builder.evalCondition(condition, join, `ORDER BY ${this.table}.id DESC LIMIT 1`)}
             `, this.builder.resHandler(resolve, reject, true))
         })
     }
@@ -101,7 +103,7 @@ module.exports = class SQLifier {
     findOldestOne ({condition = '', select = '*', join, coalesce = false} = {}) {
         return new Promise((resolve, reject) => {
             this.conn.query(`
-            SELECT ${select} FROM ${this.table} ${this.builder.evalCondition(condition, join, `ORDER BY ${this.table}.id ASC LIMIT 1`)}
+            SELECT ${this.builder.joinSafeSelect(select, join)} FROM ${this.table} ${this.builder.evalCondition(condition, join, `ORDER BY ${this.table}.id ASC LIMIT 1`)}
             `, this.builder.resHandler(resolve, reject, true))
         })
     }
