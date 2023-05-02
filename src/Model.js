@@ -8,7 +8,6 @@ module.exports = class Model {
     constructor (table, properties) {
         this._properties = properties;
         this._table = table;
-        this._builder = 
 
         Utility.each(properties, (key, value) => {
             this[key] = value;
@@ -30,6 +29,12 @@ module.exports = class Model {
         })
 
         return primaryKey;
+    }
+
+    get isEmpty () {
+        if (this._properties) return false;
+
+        return true;
     }
 
     toObject () {
