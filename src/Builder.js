@@ -14,6 +14,8 @@ module.exports = class Builder {
     #connection
     #conn;
     #canSearch = false;
+    #foreignKeyCount = 0;
+    #dateFields = {}
 
     constructor () {
         this.#connection = new Connection()
@@ -40,6 +42,12 @@ module.exports = class Builder {
         this.#canSearch = true;
     }
 
+    isColumnDate (fieldType) {
+        return (
+            ['datetime', 'date', 'timestamp'].includes(fieldType.toLowerCase())
+        )
+    }
+
     removeSearch () {
         this.#canSearch = false;
     }
@@ -64,9 +72,27 @@ module.exports = class Builder {
         })
     }
 
+    rememberDateField (columnName, getDate) {
+        if (typeof getDate != 'function') return;
+
+        if (!this.#dateFields[this.#tableName]) this.#dateFields[this.#tableName] = {}
+
+        this.#dateFields[this.#tableName][columnName] = getDate;
+    }
+
+    getUpdateDefaultDateFields (tableName) {
+        const fields = {};
+
+        Utility.each(this.#dateFields[tableName], (columnName, value) => {
+            fields[columnName] = Utility.normalizeValue(value, true);
+        })
+
+        return fields;
+    }
+
     makeForeignKey (ref, field, { ref_field = 'id' } = {}) {
         return `
-            CONSTRAINT fk_${this.table}_${ref}
+            CONSTRAINT fk_${++this.#foreignKeyCount}_${this.table}_${ref}
             FOREIGN KEY (${field})
             REFERENCES ${ref}(${ref_field})
             ON DELETE CASCADE
@@ -78,6 +104,9 @@ module.exports = class Builder {
         let def = '', line = '';
 
         Utility.each(schema, (columnName, column) => {
+            if (column && column.default && this.isColumnDate(column.type))
+                this.rememberDateField(columnName, column.default)
+
             line = !nameOnly ?
                 `${columnName}
                     ${column.length ? column.type + '(' + column.length + ')' : column.type}
@@ -204,7 +233,7 @@ module.exports = class Builder {
 
             if (!this.#canSearch) query += `${this.namespace ? this.namespace + '.' + key : key} ${Utility.evalOperators(value)} ${Utility.normalizeValue(value)} ${sep} `;
 
-            else query += `${this.namespace ? this.namespace + '.' + key : key} LIKE '%${value}%' ${sep} `;
+            else query += `${this.namespace ? this.namespace + '.' + key : key} LIKE '%${Utility.normalizeValue(value, true)}%' ${sep} `;
         })
 
         return Utility.removeAtEndOfString(query, sep)
@@ -240,6 +269,48 @@ module.exports = class Builder {
         });
 
         return Utility.removeAtEndOfString(newSelectStatement, ',');
+    }
+
+    getSelectedColumns (select, tableName) {
+        if (select != '*') return select.split(',')
+
+        return Utility.extractSchemaColumns(get('dbcache.schema')[tableName])
+    }
+
+    safelyPrefix (name, tableName, usedColumnNames) {
+        if (usedColumnNames.hasOwnProperty(name)) {
+            return this.safelyPrefix(`_${tableName}_${name}`, tableName, usedColumnNames)
+        }
+
+        usedColumnNames[name] = name;
+
+        return name;
+    }
+
+    namespaceColumns (arr, tableName, usedColumnNames) {
+        for (let c = 0; c < arr.length; c++) {
+            const safeName = this.safelyPrefix(arr[c].trim(), tableName, usedColumnNames);
+
+            arr[c] = `${tableName}.${arr[c].trim()} AS ${safeName}`;
+        }
+    }
+
+    joinSafeSelect (select, join) {
+        const usedColumnNames = {};
+
+        let columns = this.getSelectedColumns(select, this.#tableName);
+        
+        this.namespaceColumns(columns, this.#tableName, usedColumnNames)
+
+        if (join) {
+            let joinColumns = this.getSelectedColumns(join.select || '*', join.ref);
+
+            this.namespaceColumns(joinColumns, join.ref, usedColumnNames)
+
+            columns = columns.concat(joinColumns);
+        }
+
+        return columns.join(', ');
     }
 
     buildAnd (data) {
