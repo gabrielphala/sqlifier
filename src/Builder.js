@@ -208,11 +208,9 @@ module.exports = class Builder {
             cachedSchema = get('dbcache.schema');
 
         this.conn.query(`
-            IF NOT (EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = '${this.connection.dbName}' AND TABLE_NAME = '${tableName}')) THEN
-                CREATE TABLE ${tableName} (
-                    ${tableDef}
-                );
-            END IF
+            CREATE TABLE IF NOT EXISTS ${tableName} (
+                ${tableDef}
+            );
             `, (err, res) => {
             Utility.exitOnError(err)
         })
