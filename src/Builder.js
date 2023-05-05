@@ -179,7 +179,11 @@ module.exports = class Builder {
             resolve(
                 !first ?
                 out :
-                (new Model(this.table, out[0])).setBuilder(new Builder())
+                (
+                    out[0] ?
+                    (new Model(this.table, out[0])).setBuilder(new Builder()) :
+                    null
+                )
             )
         }
 
