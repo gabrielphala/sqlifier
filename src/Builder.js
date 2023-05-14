@@ -304,13 +304,17 @@ module.exports = class Builder {
         
         this.namespaceColumns(columns, this.#tableName, usedColumnNames)
 
-        if (join) {
-            let joinColumns = this.getSelectedColumns(join.select || '*', join.ref);
+        join = Array.isArray(join) ? join : [join];
 
-            this.namespaceColumns(joinColumns, join.ref, usedColumnNames)
+        join.forEach(clause => {
+            if (clause) {
+                let joinColumns = this.getSelectedColumns(clause.select || '*', clause.ref);
 
-            columns = columns.concat(joinColumns);
-        }
+                this.namespaceColumns(joinColumns, clause.ref, usedColumnNames)
+
+                columns = columns.concat(joinColumns);
+            }
+        });
 
         return columns.join(', ');
     }
@@ -350,9 +354,19 @@ module.exports = class Builder {
         `
     }
 
+    makeJoinClauses (condition, join) {
+        if (!Array.isArray(join)) return this.buildJoin(condition, join);
+
+        let compoundedJoins = '';
+
+        join.forEach(clause => compoundedJoins += this.buildJoin(condition, clause));
+
+        return compoundedJoins;
+    }
+
     evalCondition (condition, join, modifiers = '') {
         if (condition && !join) return `WHERE ${this.buildOr(condition)} ${modifiers}`
-        else if (join) return `${this.buildJoin(condition, join)} ${modifiers}`
+        else if (join) return `${this.makeJoinClauses(condition, join)} ${modifiers}`
         else return '';
     }
 }
