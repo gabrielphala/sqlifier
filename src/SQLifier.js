@@ -115,10 +115,45 @@ module.exports = class SQLifier {
             select = coalesce ? this.builder.coalesce(select, join) : select;
 
             this.conn.query(`
-            SELECT ${select} FROM ${this.table} ${this.builder.evalCondition(condition, join)}
+            SELECT ${this.builder.joinSafeSelect(select, join)} FROM ${this.table} ${this.builder.evalCondition(condition, join)}
             `, this.builder.resHandler(resolve, reject))
 
             this.builder.removeSearch()
+        })
+    }
+
+    unionSearch ({ conditions = [], select = '*', joins = [], coalesce = false }) {
+        return new Promise((resolve, reject) => {
+            this.builder.canSearch()
+
+            let i = 0;
+
+            const getSelect = () => Array.isArray(select) ? select[i] : select;
+
+            const unionJoins = [];
+            const unionTables = [];
+
+            joins.forEach(join => { 
+                join.forEach(table => {
+                    unionJoins.push({ ref: table.ref, select: '*' })
+                });
+            });
+
+            let query = '';
+
+            for (; i < Math.max(conditions.length, joins.length); i++) {
+                const join = joins[i];
+                const condition = conditions[i];
+
+                select = getSelect();
+                select = coalesce ? this.builder.coalesce(select, join) : select;
+
+                query += `${ i == 0 ? '' : 'UNION' } SELECT ${this.builder.joinSafeSelect(select, unionJoins)} FROM ${this.table} ${this.builder.evalCondition(condition, join)}`;
+            }
+
+            this.conn.query(query, this.builder.resHandler(resolve, reject));
+
+            this.builder.removeSearch();
         })
     }
 }
