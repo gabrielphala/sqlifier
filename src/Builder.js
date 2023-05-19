@@ -342,11 +342,7 @@ module.exports = class Builder {
     }
 
     buildJoin (stdWhereCondition, join = {}) {
-        const canSearch = this.#canSearch;
-
-        this.#canSearch = false;
         const joinCondition = this.safely(join.ref, () => this.buildJoinCondition(join))
-        this.#canSearch = canSearch;
         
         return `
             ${!join.kind ? 'INNER' : join.kind} JOIN ${join.ref} ON ${joinCondition}
