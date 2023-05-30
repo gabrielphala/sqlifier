@@ -73,18 +73,26 @@ module.exports = class Builder {
     }
 
     rememberDateField (columnName, getDate) {
-        if (typeof getDate != 'function') return;
-
         if (!this.#dateFields[this.#tableName]) this.#dateFields[this.#tableName] = {}
 
         this.#dateFields[this.#tableName][columnName] = getDate;
     }
 
-    getUpdateDefaultDateFields (tableName) {
+    updateDefaultDateFields (tableName) {
         const fields = {};
 
         Utility.each(this.#dateFields[tableName], (columnName, value) => {
             fields[columnName] = Utility.normalizeValue(value, true);
+        })
+
+        return fields;
+    }
+
+    updateStaticDateFields (tableName, data) {
+        const fields = {};
+
+        Utility.each(this.#dateFields[tableName], (columnName) => {
+            if (data[columnName]) fields[columnName] = Utility.normalizeValue(data[columnName], true);
         })
 
         return fields;
@@ -104,7 +112,7 @@ module.exports = class Builder {
         let def = '', line = '';
 
         Utility.each(schema, (columnName, column) => {
-            if (column && column.default && this.isColumnDate(column.type))
+            if (column && this.isColumnDate(column.type))
                 this.rememberDateField(columnName, column.default)
 
             line = !nameOnly ?
