@@ -1,4 +1,5 @@
 const Middleware = require("./Middleware");
+const Timezones = require("./Timezones");
 const Utility = require("./Utility");
 
 module.exports = class Connection {
@@ -43,6 +44,8 @@ module.exports = class Connection {
         this.dbName = name;
 
         this.connect()
+
+        this.query(`SET @@global.time_zone = '${Timezones.getDefaultOffset()}'`);
 
         this.query(`CREATE DATABASE IF NOT EXISTS ${name}`)
 
