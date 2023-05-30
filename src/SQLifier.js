@@ -28,8 +28,14 @@ module.exports = class SQLifier {
 
     insert (data) {
         return new Promise((resolve, reject) => {
-            const { columns, values } = 
-                this.builder.getColumnValuePairs({ ...data, ...this.#builder.getUpdateDefaultDateFields(this.table) });
+            const _data = {
+                ...data,
+                ...this.#builder.updateDefaultDateFields(this.table),
+                ...this.#builder.updateStaticDateFields(this.table, data)
+            }
+
+            const { columns, values } =
+                this.builder.getColumnValuePairs(_data);
 
             this.conn.query(`
                 INSERT INTO ${this.table} (${columns}) VALUES (${values});
