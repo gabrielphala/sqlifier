@@ -19,6 +19,7 @@
   },
   "homepage": "https://github.com/gabrielphala/sqlifier#readme",
   "dependencies": {
+    "moment-timezone": "^0.5.43",
     "mysql": "^2.18.1",
     "node-localstorage": "^2.2.1"
   }
