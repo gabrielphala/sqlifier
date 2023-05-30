@@ -1,20 +1,15 @@
+const moment = require("moment-timezone");
+
+const Timezones = require("./Timezones")
+
 class SQLDate {
-    static get date () {
-        return new Date((new Date).toLocaleString('en-US', { timeZone: 'Africa/Johannesburg' }));
-    }
-
-    static makeDate (date) {
-        const newDate = date || new Date();
-
-        return 
-    }
-
     static now () {
-        return (new Date()).toISOString().slice(0, 19).replace('T', ' ');
+        return moment().tz(Timezones.default).format('YYYY-MM-DD HH:mm:ss')
     }
 
+    // TODO this neds to check if date is string if so, check if it has a timezone
     static toSQLDatetime (date) {
-        return (new Date()).toISOString().slice(0, 19).replace('T', ' ');
+        return moment(date).tz(Timezones.default).format('YYYY-MM-DD HH:mm:ss')
     }
 }
 
