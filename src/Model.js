@@ -31,6 +31,7 @@ module.exports = class Model {
         return primaryKey;
     }
 
+    /** @deprecated */
     get isEmpty () {
         if (this._properties) return false;
 
