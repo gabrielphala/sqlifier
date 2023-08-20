@@ -1,5 +1,5 @@
 const LocalStorage = require('node-localstorage').LocalStorage;
-localStorage = new LocalStorage(__dirname + '/cache/local-storage');
+const localStorage = new LocalStorage(__dirname + '/cache/local-storage');
 
 module.exports.set = (key, value) => {
     localStorage.setItem(key, JSON.stringify({ data: value }));
