@@ -1,6 +1,6 @@
 {
   "name": "sqlifier",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "A MySQL ORM (Object-Relational Mapping) for NodeJS",
   "main": "index.js",
   "repository": {
@@ -14,6 +14,7 @@
   ],
   "author": "Gabriel Phala",
   "license": "MIT",
+  "types": "index.d.ts",
   "bugs": {
     "url": "https://github.com/gabrielphala/sqlifier/issues"
   },
