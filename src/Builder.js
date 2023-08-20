@@ -349,28 +349,31 @@ module.exports = class Builder {
             `${this.table}.${join.id} = ${join.ref}.id`
     }
 
-    buildJoin (stdWhereCondition, join = {}) {
+    buildJoin (join = {}) {
         const joinCondition = this.safely(join.ref, () => this.buildJoinCondition(join))
         
         return `
             ${!join.kind ? 'INNER' : join.kind} JOIN ${join.ref} ON ${joinCondition}
-            ${ stdWhereCondition ? ' AND ' + this.safely(() => this.buildOr(stdWhereCondition)) : ''}
         `
     }
 
-    makeJoinClauses (condition, join) {
-        if (!Array.isArray(join)) return this.buildJoin(condition, join);
+    makeJoinClauses (join) {
+        if (!Array.isArray(join)) return this.buildJoin(join);
 
         let compoundedJoins = '';
 
-        join.forEach(clause => compoundedJoins += this.buildJoin(condition, clause));
+        join.forEach(clause => compoundedJoins += this.buildJoin(clause));
 
         return compoundedJoins;
     }
 
     evalCondition (condition, join, modifiers = '') {
-        if (condition && !join) return `WHERE ${this.buildOr(condition)} ${modifiers}`
-        else if (join) return `${this.makeJoinClauses(condition, join)} ${modifiers}`
-        else return '';
+        let query = '';
+
+        if (join) query += this.makeJoinClauses(join);
+
+        if (condition) query += `WHERE ${this.safely(() => this.buildOr(condition))} ${modifiers}`;
+
+        return query;
     }
 }
