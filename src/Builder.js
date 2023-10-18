@@ -124,11 +124,14 @@ module.exports = class Builder {
                 
                 `${columnName}${lineSuffix}\n`
                 
-            if (column && column.isPrimary)
+            if (column && column.isPrimary) {
+                this.primaryKey = columnName;
+
                 line = line + `${column && column.isPrimary ? 'PRIMARY KEY (' + columnName + '),\n' : ''}`;
+            }
                 
             else if (column && column.ref)
-                line = line + (column.ref ? this.makeForeignKey(column.ref, columnName) : '');
+                line = line + (column.ref ? this.makeForeignKey(column.ref, columnName, { ref_field: column.refField || 'id' }) : '');
                 
             def += linePrefix + line;
         })
