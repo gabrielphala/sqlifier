@@ -166,4 +166,10 @@ module.exports = class SQLifier {
             this.builder.removeSearch();
         })
     }
+
+    raw (sql) {
+        return new Promise((resolve, reject) => {
+            this.conn.query(sql, this.builder.resHandler(resolve, reject))
+        })
+    }
 }
